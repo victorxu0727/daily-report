@@ -1,0 +1,41 @@
+name: 每日自动报告
+
+on:
+  schedule:
+    # UTC 02:00 = 北京时间 10:00，每天自动生成一份报告
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 生成当日报告
+        run: python scripts/generate_report.py --output "reports/$(date -u +%Y-%m-%d).md"
+
+      - name: 提交并推送（有变更才提交）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/
+          if git diff --cached --quiet; then
+            echo "报告未变化，跳过提交"
+          else
+            git commit -m "chore: 自动生成每日报告 $(date -u +%Y-%m-%d)"
+            git push
+          fi

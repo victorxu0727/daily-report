@@ -1,0 +1,30 @@
+name: 代码检查
+
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 语法检查
+        run: python -m py_compile scripts/generate_report.py
+
+      - name: 确定性自检
+        run: python scripts/generate_report.py --self-test
